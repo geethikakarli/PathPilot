@@ -12,7 +12,7 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
-      const { academics, skills, interests, financial } = req.body;
+      const { academics, skills, interests, financial, desiredCareer } = req.body;
 
       let profile = await Profile.findOne({ userId });
 
@@ -21,6 +21,7 @@ module.exports = async function handler(req, res) {
         profile.skills = skills;
         profile.interests = interests;
         profile.financial = financial;
+        profile.desiredCareer = desiredCareer;
         await profile.save();
         return res.json(profile);
       }
@@ -30,7 +31,8 @@ module.exports = async function handler(req, res) {
         academics,
         skills,
         interests,
-        financial
+        financial,
+        desiredCareer
       });
 
       await profile.save();

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { BrainCircuit, BookOpen, GraduationCap, LayoutDashboard, MessageSquare, TrendingUp, CheckCircle2, Search, ArrowRight, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { BrainCircuit, BookOpen, GraduationCap, LayoutDashboard, MessageSquare, TrendingUp, CheckCircle2, Search, ArrowRight, ExternalLink, Compass, Map, Info, Star } from 'lucide-react';
 
 export default function Dashboard() {
   const [insights, setInsights] = useState(null);
@@ -99,6 +99,7 @@ export default function Dashboard() {
           <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Menu</h2>
           <nav className="mt-4 space-y-1">
             <NavItem icon={<LayoutDashboard />} label="Overview" active={activeTab === 'Overview'} onClick={() => setActiveTab('Overview')} />
+            <NavItem icon={<Compass />} label="Career Path" active={activeTab === 'Career Path'} onClick={() => setActiveTab('Career Path')} />
             <NavItem icon={<BrainCircuit />} label="AI Recommendations" active={activeTab === 'AI Recommendations'} onClick={() => setActiveTab('AI Recommendations')} />
             <NavItem icon={<TrendingUp />} label="Skill Gap Analysis" active={activeTab === 'Skill Gap Analysis'} onClick={() => setActiveTab('Skill Gap Analysis')} />
             <NavItem icon={<BookOpen />} label="Learning Roadmap" active={activeTab === 'Learning Roadmap'} onClick={() => setActiveTab('Learning Roadmap')} />
@@ -113,6 +114,7 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold text-slate-900">{activeTab === 'Overview' ? `Welcome back, ${userName}!` : activeTab}</h1>
           <p className="text-slate-600 mt-2">
             {activeTab === 'Overview' && 'Here are your personalized career insights based on your profile.'}
+            {activeTab === 'Career Path' && 'Step-by-step roadmap for your specific dream career.'}
             {activeTab === 'AI Recommendations' && 'Deep dive into your top career matches and market trends.'}
             {activeTab === 'Skill Gap Analysis' && 'Identify missing skills and discover resources to acquire them.'}
             {activeTab === 'Learning Roadmap' && 'Your step-by-step timeline to achieving your career goals.'}
@@ -134,6 +136,7 @@ export default function Dashboard() {
             setActiveTab={setActiveTab}
           />
         )}
+        {activeTab === 'Career Path' && <CareerPathView profile={insights} />}
         {activeTab === 'AI Recommendations' && <AIRecommendationsView insights={insights} setInsights={setInsights} setActiveTab={setActiveTab} />}
         {activeTab === 'Skill Gap Analysis' && <SkillGapView insights={insights} />}
         {activeTab === 'Learning Roadmap' && <LearningRoadmapView insights={insights} />}
@@ -164,6 +167,188 @@ function NavItem({ icon, label, active, onClick }) {
       <span className={`mr-3 ${active ? 'text-brand-600' : 'text-slate-400'}`}>{icon}</span>
       {label}
     </button>
+  );
+}
+
+function CareerPathView({ profile }) {
+  const [career, setCareer] = useState(profile?.desiredCareer || 'IAS Officer');
+  const [pathData, setPathData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchPath = async (selectedCareer) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/ai/career-path', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ career: selectedCareer })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPathData(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (profile?.desiredCareer) {
+      setCareer(profile.desiredCareer);
+      fetchPath(profile.desiredCareer);
+    } else {
+      fetchPath(career);
+    }
+  }, [profile?.desiredCareer]);
+
+  const popularCareers = ["IAS Officer", "Chartered Accountant (CA)", "Doctor (MBBS)", "Software Engineer", "Data Scientist", "Lawyer", "Pilot", "MBA Graduate"];
+
+  return (
+    <div className="space-y-8 animate-fade-in">
+      {/* Search & Selector */}
+      <div className="glass-panel p-6">
+        <div className="flex flex-col md:flex-row md:items-end gap-6">
+          <div className="flex-1">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Explore another path</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search for any career (e.g., Space Scientist, UI/UX Designer)..." 
+                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                value={career}
+                onChange={(e) => setCareer(e.target.value)}
+              />
+            </div>
+          </div>
+          <button 
+            onClick={() => fetchPath(career)}
+            disabled={loading}
+            className="bg-brand-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-700 shadow-md transition-all disabled:opacity-50"
+          >
+            {loading ? 'Generating...' : 'Show My Path'}
+          </button>
+        </div>
+        
+        <div className="mt-6">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Popular Careers</p>
+          <div className="flex flex-wrap gap-2">
+            {popularCareers.map(c => (
+              <button 
+                key={c} 
+                onClick={() => { setCareer(c); fetchPath(c); }}
+                className={`text-xs px-3 py-1.5 rounded-full border transition-all ${career === c ? 'bg-brand-100 text-brand-700 border-brand-200 font-bold' : 'bg-white text-slate-600 border-slate-200 hover:border-brand-300'}`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <Map className="w-12 h-12 text-brand-400 animate-pulse mb-4" />
+          <p className="text-slate-500 font-medium">Mapping your future steps...</p>
+        </div>
+      ) : !pathData ? (
+        <div className="flex flex-col items-center justify-center py-20 glass-panel">
+          <Compass className="w-12 h-12 text-slate-300 mb-4" />
+          <p className="text-slate-500 font-medium">No roadmap found for "{career}". Try searching for another career or check your internet connection.</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {/* Header Card */}
+          <div className="glass-panel p-8 bg-gradient-to-br from-brand-600 to-brand-800 text-white border-none shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Compass className="w-48 h-48 rotate-12" />
+            </div>
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider">Dream Career Path</span>
+                {profile?.desiredCareer === pathData.career && (
+                  <span className="flex items-center gap-1 text-yellow-300 text-xs font-bold"><Star className="w-3 h-3 fill-current" /> Matches Your Profile</span>
+                )}
+              </div>
+              <h2 className="text-4xl font-black mb-4">How to become an {pathData.career}</h2>
+              <p className="text-brand-100 text-lg max-w-2xl leading-relaxed">{pathData.overview}</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 pt-8 border-t border-white/20">
+                <div>
+                  <p className="text-xs font-bold text-brand-200 uppercase tracking-wider mb-1">Eligibility</p>
+                  <p className="font-bold">{pathData.eligibility}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-brand-200 uppercase tracking-wider mb-1">Estimated Duration</p>
+                  <p className="font-bold">{pathData.duration}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-brand-200 uppercase tracking-wider mb-1">Average Salary Range</p>
+                  <p className="font-bold">{pathData.salary}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {pathData.personalizedNote && (
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-6 rounded-r-xl flex gap-4 items-start shadow-sm">
+              <Info className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-amber-900 mb-1">Personalized Advice for You</h3>
+                <p className="text-amber-800 leading-relaxed">{pathData.personalizedNote}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Timeline */}
+          <div className="relative pl-8 md:pl-0">
+            {/* Desktop Center Line */}
+            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-1 bg-slate-200 -translate-x-1/2"></div>
+            {/* Mobile Left Line */}
+            <div className="md:hidden absolute left-0 top-0 bottom-0 w-1 bg-slate-200"></div>
+
+            <div className="space-y-12 relative">
+              {pathData.steps.map((step, idx) => (
+                <div key={idx} className={`relative flex items-center ${idx % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
+                  {/* Timeline Dot */}
+                  <div className="absolute left-[-2rem] md:left-1/2 w-8 h-8 rounded-full bg-brand-500 border-4 border-white shadow-md z-20 -translate-x-1/2 flex items-center justify-center text-white text-xs font-bold">
+                    {idx + 1}
+                  </div>
+                  
+                  {/* Content Card */}
+                  <div className={`w-full md:w-[45%] glass-panel p-6 hover:border-brand-400 transition-all group ${idx % 2 === 0 ? 'md:mr-auto' : 'md:ml-auto'}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-brand-600 transition-colors">{step.title}</h3>
+                      <span className="text-xs font-bold text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">{step.duration}</span>
+                    </div>
+                    <p className="text-slate-600 mb-4 leading-relaxed">{step.desc}</p>
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 group-hover:bg-brand-50/50 transition-colors">
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Star className="w-3 h-3 text-brand-500" /> Pro Tip</p>
+                      <p className="text-sm text-slate-700 italic">"{step.tips}"</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="glass-panel p-8 text-center bg-slate-900 text-white border-none shadow-xl">
+            <h3 className="text-2xl font-bold mb-3">Ready to start this journey?</h3>
+            <p className="text-slate-400 mb-6 max-w-xl mx-auto">PathPilot can help you find the best resources, books, and mentors for every step of this roadmap.</p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <button className="bg-brand-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-600 transition-all">Enroll in Foundation Prep</button>
+              <button className="bg-white/10 text-white border border-white/20 px-8 py-3 rounded-xl font-bold hover:bg-white/20 transition-all">Download PDF Roadmap</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

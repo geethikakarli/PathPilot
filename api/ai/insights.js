@@ -28,18 +28,21 @@ module.exports = async function handler(req, res) {
     const interestsStr = profile.interests.toLowerCase();
     const skillsStr = profile.skills.toLowerCase();
 
-    // Very simple dynamic logic to mock AI behavior
-    let careerMatch = 'Software Engineer';
-    let matchScore = 88;
-    if (interestsStr.includes('data') || interestsStr.includes('ai') || interestsStr.includes('machine learning')) {
-      careerMatch = 'Data Scientist';
-      matchScore = 94;
-    } else if (interestsStr.includes('design') || interestsStr.includes('art')) {
-      careerMatch = 'UI/UX Designer';
-      matchScore = 91;
-    } else if (interestsStr.includes('marketing') || interestsStr.includes('business')) {
-      careerMatch = 'Digital Marketing Manager';
-      matchScore = 89;
+    // Prioritize user's desired career if set
+    let careerMatch = profile.desiredCareer || 'Software Engineer';
+    let matchScore = profile.desiredCareer ? 95 : 88;
+
+    if (!profile.desiredCareer) {
+      if (interestsStr.includes('data') || interestsStr.includes('ai') || interestsStr.includes('machine learning')) {
+        careerMatch = 'Data Scientist';
+        matchScore = 94;
+      } else if (interestsStr.includes('design') || interestsStr.includes('art')) {
+        careerMatch = 'UI/UX Designer';
+        matchScore = 91;
+      } else if (interestsStr.includes('marketing') || interestsStr.includes('business')) {
+        careerMatch = 'Digital Marketing Manager';
+        matchScore = 89;
+      }
     }
 
     const missingSkills = [];
@@ -55,6 +58,7 @@ module.exports = async function handler(req, res) {
     res.json({
       careerMatch,
       matchScore,
+      desiredCareer: profile.desiredCareer,
       missingSkills,
       scholarships: [
         {
