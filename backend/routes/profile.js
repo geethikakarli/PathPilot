@@ -7,7 +7,7 @@ const router = express.Router();
 // Save or Update Profile
 router.post('/', auth, async (req, res) => {
   try {
-    const { academics, skills, interests, financial } = req.body;
+    const { academics, skills, interests, financial, desiredCareer } = req.body;
     
     let profile = await Profile.findOne({ userId: req.user });
     
@@ -16,6 +16,7 @@ router.post('/', auth, async (req, res) => {
       profile.skills = skills;
       profile.interests = interests;
       profile.financial = financial;
+      profile.desiredCareer = desiredCareer;
       await profile.save();
       return res.json(profile);
     }
@@ -25,7 +26,8 @@ router.post('/', auth, async (req, res) => {
       academics,
       skills,
       interests,
-      financial
+      financial,
+      desiredCareer
     });
 
     await profile.save();

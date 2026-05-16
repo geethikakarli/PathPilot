@@ -6,6 +6,7 @@ const ProfileSchema = new mongoose.Schema({
   skills: { type: String, required: true },
   interests: { type: String, required: true },
   financial: { type: String, required: true },
+  desiredCareer: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 
