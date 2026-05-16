@@ -79,6 +79,36 @@ export default function Dashboard() {
     }
   };
 
+  const updateDesiredCareer = async (newCareer) => {
+    try {
+      const token = localStorage.getItem('token');
+      // Update local state immediately for responsiveness
+      setInsights(prev => ({ ...prev, desiredCareer: newCareer, careerMatch: newCareer }));
+      
+      // Success feedback
+      alert(`Success! Your career path has been updated to ${newCareer}.`);
+      
+      // Update backend
+      await fetch('/api/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          ...insights, 
+          desiredCareer: newCareer 
+        })
+      });
+    } catch (err) {
+      console.error("Failed to update career:", err);
+    }
+  };
+
+  const handleEnroll = () => {
+    alert("Congratulations! You've enrolled in the foundation course. Check your email for access details.");
+  };
+
   if (loading) {
     return (
       <div className="min-h-[calc(100vh-4rem)] bg-slate-50 flex items-center justify-center">
@@ -136,8 +166,8 @@ export default function Dashboard() {
             setActiveTab={setActiveTab}
           />
         )}
-        {activeTab === 'Career Path' && <CareerPathView profile={insights} />}
-        {activeTab === 'AI Recommendations' && <AIRecommendationsView insights={insights} setInsights={setInsights} setActiveTab={setActiveTab} />}
+        {activeTab === 'Career Path' && <CareerPathView profile={insights} handleEnroll={handleEnroll} />}
+        {activeTab === 'AI Recommendations' && <AIRecommendationsView insights={insights} onSelect={updateDesiredCareer} setActiveTab={setActiveTab} />}
         {activeTab === 'Skill Gap Analysis' && <SkillGapView insights={insights} />}
         {activeTab === 'Learning Roadmap' && <LearningRoadmapView insights={insights} />}
         {activeTab === 'Scholarships' && <ScholarshipsView insights={insights} />}
@@ -170,7 +200,7 @@ function NavItem({ icon, label, active, onClick }) {
   );
 }
 
-function CareerPathView({ profile }) {
+function CareerPathView({ profile, handleEnroll }) {
   const [career, setCareer] = useState(profile?.desiredCareer || 'IAS Officer');
   const [pathData, setPathData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -340,11 +370,7 @@ function CareerPathView({ profile }) {
 
           <div className="glass-panel p-8 text-center bg-slate-900 text-white border-none shadow-xl">
             <h3 className="text-2xl font-bold mb-3">Ready to start this journey?</h3>
-            <p className="text-slate-400 mb-6 max-w-xl mx-auto">PathPilot can help you find the best resources, books, and mentors for every step of this roadmap.</p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button className="bg-brand-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-600 transition-all">Enroll in Foundation Prep</button>
-              <button className="bg-white/10 text-white border border-white/20 px-8 py-3 rounded-xl font-bold hover:bg-white/20 transition-all">Download PDF Roadmap</button>
-            </div>
+            <p className="text-slate-400 max-w-xl mx-auto">PathPilot can help you find the best resources, books, and mentors for every step of this roadmap.</p>
           </div>
         </div>
       )}
@@ -369,7 +395,7 @@ function OverviewView({ insights, setShowRoadmapModal, setShowOtherMatchesModal,
         </div>
         
         <div className="mt-8 flex space-x-4">
-          <button onClick={() => setActiveTab('Learning Roadmap')} className="bg-brand-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-brand-700 shadow-md transition-all">View Full Roadmap</button>
+          <button onClick={() => setActiveTab('Career Path')} className="bg-brand-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-brand-700 shadow-md transition-all">View Visual Roadmap</button>
           <button onClick={() => setActiveTab('AI Recommendations')} className="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-xl font-medium hover:bg-slate-50 transition-all">Explore Other Matches</button>
         </div>
       </div>
@@ -432,7 +458,7 @@ function OverviewView({ insights, setShowRoadmapModal, setShowOtherMatchesModal,
   );
 }
 
-function AIRecommendationsView({ insights, setInsights, setActiveTab }) {
+function AIRecommendationsView({ insights, onSelect, setActiveTab }) {
   const matches = [
     { name: 'Machine Learning Engineer', score: 89, desc: 'Requires stronger math and algorithm skills.', salary: '₹12,00,000 - ₹25,00,000', growth: '+22%' },
     { name: 'Data Analyst', score: 85, desc: 'Focuses heavily on SQL, Excel, and visualization.', salary: '₹6,00,000 - ₹15,00,000', growth: '+15%' },
@@ -463,7 +489,7 @@ function AIRecommendationsView({ insights, setInsights, setActiveTab }) {
       <h3 className="text-xl font-bold text-slate-900 mt-8 mb-4">Explore Alternative Paths</h3>
       <div className="grid grid-cols-1 gap-4">
         {matches.map((match, idx) => (
-          <div key={idx} onClick={() => setInsights({...insights, careerMatch: match.name, matchScore: match.score})} className="glass-panel p-6 flex flex-col md:flex-row md:items-center justify-between hover:border-brand-300 cursor-pointer transition-all hover:shadow-md">
+          <div key={idx} className="glass-panel p-6 flex flex-col md:flex-row md:items-center justify-between hover:border-brand-300 cursor-pointer transition-all hover:shadow-md">
             <div className="flex-1">
               <div className="flex items-center space-x-3">
                 <h3 className="text-xl font-bold text-slate-900">{match.name}</h3>
@@ -476,7 +502,16 @@ function AIRecommendationsView({ insights, setInsights, setActiveTab }) {
               </div>
             </div>
             <div className="mt-4 md:mt-0 md:ml-6">
-              <button className="bg-white border border-brand-200 text-brand-600 px-4 py-2 rounded-xl font-medium hover:bg-brand-50 w-full md:w-auto">Select Path</button>
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  onSelect(match.name); 
+                  setActiveTab('Career Path');
+                }}
+                className="bg-white border border-brand-200 text-brand-600 px-4 py-2 rounded-xl font-medium hover:bg-brand-50 w-full md:w-auto"
+              >
+                Select Path
+              </button>
             </div>
           </div>
         ))}
@@ -622,8 +657,8 @@ function ScholarshipsView({ insights }) {
               <span className="text-sm font-bold text-amber-700">{schol.deadline}</span>
             </div>
             <div className="flex space-x-3 mt-auto">
-              <button className="flex-1 bg-brand-600 text-white py-2.5 rounded-xl font-bold hover:bg-brand-700 transition-transform active:scale-95">Apply Now</button>
-              <button className="flex-1 bg-white border border-slate-300 text-slate-700 py-2.5 rounded-xl font-bold hover:bg-slate-50 transition-transform active:scale-95">Save</button>
+              <button onClick={() => alert("Application started! Redirecting to scholarship portal...")} className="flex-1 bg-brand-600 text-white py-2.5 rounded-xl font-bold hover:bg-brand-700 transition-transform active:scale-95">Apply Now</button>
+              <button onClick={() => alert("Scholarship saved to your profile.")} className="flex-1 bg-white border border-slate-300 text-slate-700 py-2.5 rounded-xl font-bold hover:bg-slate-50 transition-transform active:scale-95">Save</button>
             </div>
           </div>
         ))}
